@@ -1,0 +1,57 @@
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRoute
+metadata:
+  name: rancher-route-tls
+  namespace: cattle-system
+spec:
+  entryPoints:
+    - websecure
+  routes:
+  - match: Host(`rancher.yourdomain.com`)
+    middlewares:
+    - name: svc-rancher-headers
+    kind: Rule
+    services:
+    - name: rancher
+      port: 80
+  tls:
+    certResolver: myresolver
+    
+---
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRoute
+metadata:
+  name: rancher-route
+  namespace: cattle-system
+spec:
+  entryPoints:
+    - web
+  routes:
+  - match: Host(`rancher.yourdomain.com`)
+    middlewares:   
+    - name: svc-rancher-redirectscheme-to-https
+    kind: Rule
+    services:
+    - name: rancher
+      port: 80
+---
+apiVersion: traefik.containo.us/v1alpha1
+kind: Middleware
+metadata:
+  name: svc-rancher-redirectscheme-to-https
+  namespace: cattle-system
+spec:
+  redirectScheme:
+    scheme: https
+    permanent: true
+
+---
+apiVersion: traefik.containo.us/v1alpha1
+kind: Middleware
+metadata:
+  name: svc-rancher-headers
+  namespace: cattle-system
+spec:
+  headers:
+    customRequestHeaders:
+      X-Forwarded-Proto: "https"
